@@ -1,0 +1,206 @@
+---
+title: "Measures of reliability"
+output: html_document
+editor_options:
+  chunk_output_type: console
+---
+
+# Measures of reliability
+
+## Introduction
+We conducted a reliability study on an ergometer cycle with students in our class as participants. We conducted a lactate threshold test and a maximal oxygen consumption test under the same conditions twice (t1 and t2), to measure the reliability of the tests. This report presents measures of reliability (technical error and smallest worthwhile change) of the three variables maximal oxygen consumption (VO2max), maximal power output (Wmax) and power output at 4 mmol/L [La^-^] (W4mmol/L).
+
+
+## Methods
+#### Typical error
+Reliability means the reproducibility of values of a test in repeated trials on the same individuals. With better reliability we get better precision of single measurements and we also get better tracking of changes in measurements (Hopkins, 2000). According to Hopkins (2000), the main measures of reliability are within-subject random variation, systematic change in the mean, and retest correlation. In this report we are calculating the within-subject variation.
+
+A measure of within-subject variation is the typical standard error of measurement, also called just the typical error (TE). TE is the standard deviation of an individual´s repeated measurements, and is often presented as percentage of the mean (Hopkins, 2000). The smaller typical error, the more reliable results. 
+
+We calculate the **absolute TE** as the standard deviation of the change between to measures,*sdiff*, divided by *sqrt(2)*. To calculate the **relative TE**, we divide the *absolute TE* with the *group overall mean*, and multiply by *100*.
+
+#### Smallest worthwhile change
+The smallest worthwhile change is the smallest practically meaningful change in measurements (Hopkins et al., 1999). If we detect a change larger than the SWC between two trials, we can be quite sure that it a real change in performance that has lead to the change in mean, and not just the typical error. Opposite, if the change between the trials are smaller than the SWC, the variation probably is a result of the typical error. We used our two tests to calculate the SWC for the three variables of interest.
+
+We calculate the smallest worthwhile change as 0.2 x *s*, where *s* is the estimate of the between individuals standard deviation. We find *s* by taking the average of multiple trials from the same individuals and calculate the standard deviation between them.
+
+## Results
+#### VO2max
+The absolute TE was 170, while the relative TE as a percentage of the mean score was 4,18 %. The SWC was 210. ml/kg/min.
+
+```{r Vo2max, echo=FALSE, include=FALSE}
+##### Background and Purpose: 
+# We have collected data from a reliability study where each participant was tested two times (t1 and t2).
+# The aim is to calculate typical error (TE) and smallest worthwhile change (SWC) from the data.
+# Reliability as TE can be calculated as the standard deviation of the change between to measures divided by sqrt(2). See Hopkins (2009) for details.
+# The smallest worthwhile change can be calculated based on an estimate of the standard deviation in the population for a specific test. SWC correspond to 0.2 x s where s is the estimate of the between individuals standard deviation. To calculate s we average multiple trials from the same individuals and calculate s between them.
+
+
+
+
+# Load needed packages
+library(tidyverse)
+library(readxl)
+
+# Download and save the file
+data <- read_excel("Data/Reliabilitet sykkeltest.xlsx", 
+    na = "na")
+
+##### Data vo2.max
+### Calculation of technical error 
+
+# Technical error is defined as (SD of change / sqrt(2)).
+# First we calculate the change score (Trial 2 - Trial 1), second we can calculate the absolute TE and finally the relative TE as a percentage of the mean test-score.
+
+# Making a tibble with the VO2max at t1 and t2 for each subject
+data.vo2.max <- data %>% 
+  
+  # Selecting the variables sjubject, timepoint and vo2.max
+  select(subject, timepoint, vo2.max) %>% 
+  
+  # Grouping the values based on subject and timepoint, removing NA
+  group_by(subject, timepoint) %>%
+  
+  summarise(vo2.max.m = mean(vo2.max, na.rm = TRUE)) %>% 
+  
+  pivot_wider(names_from = timepoint, values_from = vo2.max.m) %>% 
+  
+  print()
+
+# Preliminary calculation
+ data.vo2.max %>% 
+   
+   # Calculate the change score as the difference between measures 
+   mutate(change = t2 - t1) %>% 
+   
+   group_by() %>% 
+   
+   # Calculate summary statistics on an ungrouped data frame
+   summarise(sd.change = sd(change, na.rm = TRUE),         # Using na.rm to remove NA
+             mean.test = mean(c(t1, t2), na.rm = TRUE), 
+             te.abs = (sd.change / sqrt(2)),               # Calculating the absolute TE
+             te.relative = (te.abs / mean.test) * 100) %>% # Calculating the relative TE
+   
+   print()
+
+
+
+### Calculation of smallest worthwhile change
+# SWC is defined as 0.2 * between subject SD
+ 
+# Preliminary calculation
+data.vo2.max %>%
+  
+  # Grouping the data frame by row to be able to do calculations per row
+  rowwise() %>%  
+  
+  mutate(m = mean(c(t1, t2))) %>% 
+  
+  # Removing the grouping with the ungroup function
+  ungroup() %>%
+  
+  # Calculate the SD between subjects and then calculate SWC
+  summarise(sd = sd(m, na.rm = TRUE), 
+            swc = 0.2 * sd) %>%
+  print()
+
+
+```
+
+#### Wmax
+The absolute TE was 12.4, while the relative TE as a percentage of the mean score was 3,93 %. The SWC was 13.9 W.
+
+```{r Wmax, echo=FALSE, include=FALSE}
+##### Data w.max
+### Calculation of technical error 
+
+# Technical error is defined as (SD of change / sqrt(2))
+# First we calculate the change score (Trial 2 - Trial 1), second we can calculate the absolute TE
+# and finally the relative TE as a percentage of the mean test-score.
+
+data.w.max <- data %>% 
+  select(subject, timepoint, w.max) %>% 
+  group_by(subject, timepoint) %>%
+  summarise(w.max.m = mean(w.max, na.rm = TRUE)) %>% 
+  pivot_wider(names_from = timepoint, values_from = w.max.m) 
+
+
+ data.w.max %>% mutate(change = t2 - t1) %>% 
+        group_by() %>% 
+        summarise(sd.change = sd(change, na.rm = TRUE), 
+                  mean.test = mean(c(t1, t2), na.rm = TRUE),  
+                  te.abs = (sd.change / sqrt(2)), 
+                  te.relative = (te.abs / mean.test) * 100) %>%
+        print()
+
+
+
+### Calculation of smallest worthwhile change
+# SWC is defined as 0.2 * between subject SD. 
+
+data.w.max %>%
+  rowwise() %>%  # group the data frame by row
+  # This grouping is needed to do calculations per row
+  mutate(m = mean(c(t1, t2))) %>% 
+  # Remove the grouping with the ungroup function
+  ungroup() %>%
+  summarise(sd = sd(m, na.rm = TRUE), 
+            swc = 0.2 * sd) %>%
+  print()
+
+
+```
+
+#### W4mmol/L
+The absolute TE was 18.7, while the relative TE as a percentage of the mean score was 10.4 %. The SWC was 12.2 W.
+
+```{r W4mmol/l, echo=FALSE, include=FALSE}
+##### Data w.4mmol 
+### Calculation of technical error 
+
+# Technical error is defined as (SD of change / sqrt(2))
+# First we calculate the change score (Trial 2 - Trial 1), second we can calculate the absolute TE
+# and finally the relative TE as a percentage of the mean test-score.
+
+data.w.4mmol <- data %>% 
+  select(subject, timepoint, w.4mmol) %>% 
+  group_by(subject, timepoint) %>%
+  summarise(w.4mmol.m = mean(w.4mmol, na.rm = TRUE)) %>% 
+  pivot_wider(names_from = timepoint, values_from = w.4mmol.m) 
+
+
+ data.w.4mmol %>% mutate(change = t2 - t1) %>% 
+        group_by() %>% 
+        summarise(sd.change = sd(change, na.rm = TRUE), 
+                  mean.test = mean(c(t1, t2), na.rm = TRUE),  
+                  te.abs = (sd.change / sqrt(2)), 
+                  te.relative = (te.abs / mean.test) * 100) %>%
+        print()
+
+
+
+### Calculation of smallest worthwhile change
+# SWC is defined as 0.2 * between subject SD. 
+
+data.w.4mmol %>%
+  rowwise() %>%  # group the data frame by row
+  # This grouping is needed to do calculations per row
+  mutate(m = mean(c(t1, t2))) %>% 
+  # Remove the grouping with the ungroup function
+  ungroup() %>%
+  summarise(sd = sd(m, na.rm = TRUE), 
+            swc = 0.2 * sd) %>%
+  print()
+
+
+```
+
+## Discussion
+The relative TE shows us that the reliability of measurements was a little better for the VO2max and Wmax variables (4,18 % and 3,93 %, respectively) than for the W4mmol/L variable (10.4 %). One possible reason for this may be the fact that the first two variables measured maximal performance, while the latter variable measured submaximal performance. One could imagine that the maximal performance is more stable than performance on a submaximal level. Another possible reason could be that the machines that measured VO2 consumption and power output were more precise in their measurements than the untrained testleaders that performed the lactate measurements. In other words, it may be possible that the lacking experience of the testleaders had a larger impact on the W4mmol/L variable than the VO2max and Wmax variables.
+
+The calculations of SWC showed us that if we are conducting this test after for example a training intervention, there must be a change of more than 210 ml/kg/min in VO2max for us to be confident that there has been a real change in performance and not just TE related to the measurement. Similarly, the SWC of the Wmax and W4mmol/L variables showed us that there must be a change of more than 13.9 W and 12.2 W, respectively, for us to be confident that there has been a real change in performance in power output.
+
+## References
+Hopkins WG. Measures of reliability in sports medicine and science. Sports Med. 2000 Jul;30(1):1-15. doi: 10.2165/00007256-200030010-00001.
+Hopkins WG, Hawley JA, Burke LM. Design and analysis of research on sport performance enhancement. Medicine and Science in Sports and Exercise. 1999 Mar;31(3):472-485. DOI: 10.1097/00005768-199903000-00018.
+

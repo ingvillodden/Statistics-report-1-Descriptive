@@ -1,0 +1,101 @@
+---
+title: "Reproduced table 2"
+output: html_document
+editor_options:
+  chunk_output_type: console
+---
+
+# Reproduced table
+
+## Introduction
+Haun et al. (2019) conducted their study on 30 trained men who performed a 6 weeks resistance training intervention. Two groups were formed based on training outcome measures, where the top and bottom third of the data set were assigned to a high- (*n* = 10) and low-responder group (*n* = 10), respectively. The goal of the study was to examine if HIGH responders would experience greater increases in myonuclear accretion as well as biomarkers related to ribosome biogenesis, androgen signaling, mTORc1 signaling, and mitochondrial biogenesis relative to LOW responders. The baseline characteristics in each group were presented in a table, and the goal of this report is to reproduce this table based on the raw data from the study. The replicated table is called "Table 1."
+
+
+## Results
+```{r, results='asis', echo=FALSE, warning=FALSE, message=FALSE}
+##### Background and Purpose: 
+# In this report I am going to reproduce a table of baseline characteristics from Haun et al. (2019).
+# Haun et al. (2019) gathered data from 30 trained men as they performed a resistance training intervention. Two groups were formed based on training outcome measures, the top and bottom third of the data set were assigned to a high- and low-responder group, respectively.
+
+# Upload needed packages
+library(tidyverse)
+library(knitr)
+library(kableExtra) # To make tables
+library(readr) # To read csv files
+
+# Download and save the file
+download.file(url = "https://ndownloader.figstatic.com/files/14702420", destfile = "./data/hypertrophy.csv")
+
+# Creating a table
+hypertrophy <- read_csv("./data/hypertrophy.csv") %>%
+  
+  # Selecting the variables of interest
+  dplyr::select(SUB_ID, GROUP,CLUSTER, AGE, T1_BODY_MASS, 
+                PERCENT_TYPE_II_T1, Squat_3RM_kg, DXA_LBM_1,
+                DXA_FM_T1, SQUAT_VOLUME) %>%
+  
+  pivot_longer(cols = AGE:SQUAT_VOLUME, 
+               names_to = "Variable", 
+               values_to = "values") %>%
+  
+  # Removing NA from the data
+  filter(!is.na(CLUSTER)) %>%
+  
+  group_by(CLUSTER, Variable) %>%
+  
+  # Calculating the mean and SD
+  summarise(m = mean(values), 
+            s = sd(values)) %>%
+  
+  # Changing the names on columns and rows
+  mutate(ms = paste(round(m,1), 
+                    " (", 
+                    round(s,1), 
+                    ")"), 
+        
+        CLUSTER = factor(CLUSTER, 
+                        levels = c("LOW", "HIGH"), 
+                        labels = c("LOW (n = 10)", 
+                                   "HIGH (n = 10)")),
+
+         Variable = factor(Variable, 
+                           levels = c("AGE", 
+                                      "T1_BODY_MASS", 
+                                      "DXA_LBM_1", 
+                                      "DXA_FM_T1", 
+                                      "PERCENT_TYPE_II_T1", 
+                                      "Squat_3RM_kg", 
+                                      "SQUAT_VOLUME"), 
+                           labels = c("Age (years)", 
+                                      "Body mass (kg)", 
+                                      "LBM (kg)", 
+                                      "FM (kg)", 
+                                      "Type II (%)", 
+                                      "Squat 3RM (kg)", 
+                                      "Total training volume (kg)"))) %>%
+  
+  # Selecting the names and values of interest
+  select(CLUSTER, Variable, ms) %>% 
+  
+  pivot_wider(names_from = CLUSTER, values_from = ms) %>%
+  
+  # Arrange the variables in the right order
+  arrange(Variable) %>%
+  
+  # Making the format html and adding a caption
+  kable(format = "html",
+        caption = "Table 1 Participant characteristics") %>% 
+  
+  # Adding a footnote
+  footnote(general = "Values are Mean (SD)", 
+           general_title = "") %>%
+  
+  # Changing the table style and font
+  kable_classic(full_width = F, html_font = "Times New Roman")
+
+hypertrophy
+```
+
+
+## References
+Haun, Cody T., Christopher G. Vann, C. Brooks Mobley, Shelby C. Osburn, Petey W. Mumford, Paul A. Roberson, Matthew A. Romero, et al. 2019. “Pre-Training Skeletal Muscle Fiber Size and Predominant Fiber Type Best Predict Hypertrophic Responses to 6 Weeks of Resistance Training in Previously Trained Young Men.” Journal Article. Frontiers in Physiology 10 (297). https://doi.org/10.3389/fphys.2019.00297.
